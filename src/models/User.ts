@@ -7,7 +7,7 @@ export interface IPerfilHeader {
 }
 
 export interface IEstatisticas {
-  percentual: number;
+  percentual?: number;
 }
 
 export interface IDadosCadastrais {
@@ -41,7 +41,7 @@ const UserSchema: Schema = new Schema({
     fotoPerfil: { type: String, required: false }
   },
   estatisticas: {
-    percentual: { type: Number, required: true }
+    percentual: { type: Number, required: false, default: 0 }
   },
   dadosCadastrais: {
     cpf: { type: String, required: true },

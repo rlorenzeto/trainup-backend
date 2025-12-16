@@ -3,16 +3,33 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
 import Payment from "../models/Payment";
+import WorkoutHistory from "../models/WorkoutHistory";
+
+// Helper to calculate monthly percentage
+const calculateMonthlyPercentual = async (userId: any) => {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const daysInMonth = endOfMonth.getDate();
+
+  const count = await WorkoutHistory.countDocuments({
+    user: userId,
+    completedAt: { $gte: startOfMonth, $lte: endOfMonth },
+  });
+
+  return count / daysInMonth;
+};
 
 // Helper to flatten User document
-const flattenUser = (user: any) => {
+const flattenUser = (user: any, percentual?: number) => {
   return {
     email: user.email,
     nome: user.perfilHeader?.nome,
     matricula: user.perfilHeader?.matricula,
     fotoPerfil: user.perfilHeader?.fotoPerfil,
-    
-    percentual: user.estatisticas?.percentual,
+
+    percentual:
+      percentual !== undefined ? percentual : user.estatisticas?.percentual,
     cpf: user.dadosCadastrais?.cpf,
     dataNascimento: user.dadosCadastrais?.dataNascimento,
     celular: user.dadosAdicionais?.celular,
@@ -84,20 +101,20 @@ export const loginUser = async (req: Request, res: Response) => {
       }
     );
 
+    const percentual = await calculateMonthlyPercentual(user._id);
+
     res.json({
       success: true,
       token,
-      data: flattenUser(user),
+      data: flattenUser(user, percentual),
     });
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({
-        success: false,
-        message: "Erro ao realizar login",
-        error: (err as Error).message,
-      });
+    res.status(500).json({
+      success: false,
+      message: "Erro ao realizar login",
+      error: (err as Error).message,
+    });
   }
 };
 
@@ -105,7 +122,15 @@ export const loginUser = async (req: Request, res: Response) => {
 export const getAllUsers = async (req: Request, res: Response) => {
   try {
     const users = await User.find();
-    const flatUsers = users.map((user) => flattenUser(user));
+
+    // Calculate percentual for each user
+    const flatUsers = await Promise.all(
+      users.map(async (user) => {
+        const percentual = await calculateMonthlyPercentual(user._id);
+        return flattenUser(user, percentual);
+      })
+    );
+
     res.json({ success: true, data: flatUsers });
   } catch (err) {
     console.error(err);
@@ -124,7 +149,10 @@ export const getUserById = async (req: Request, res: Response) => {
       return res
         .status(404)
         .json({ success: false, message: "Usuário não encontrado" });
-    res.json({ success: true, data: user });
+
+    const percentual = await calculateMonthlyPercentual(user._id);
+
+    res.json({ success: true, data: flattenUser(user, percentual) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Erro ao buscar usuário" });
@@ -156,7 +184,9 @@ export const createUser = async (req: Request, res: Response) => {
       }
     );
 
-    res.status(201).json({ success: true, token, data: flattenUser(newUser) });
+    res
+      .status(201)
+      .json({ success: true, token, data: flattenUser(newUser, 0) });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Erro ao criar usuário" });
@@ -186,7 +216,10 @@ export const updateUser = async (req: Request, res: Response) => {
       return res
         .status(404)
         .json({ success: false, message: "Usuário não encontrado" });
-    res.json({ success: true, data: flattenUser(updatedUser) });
+
+    const percentual = await calculateMonthlyPercentual(updatedUser._id);
+
+    res.json({ success: true, data: flattenUser(updatedUser, percentual) });
   } catch (err) {
     console.error(err);
     res
