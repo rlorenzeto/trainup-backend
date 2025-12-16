@@ -31,7 +31,7 @@ app.use("/exercises", exercisesRouter);
 app.get("/", (req, res) => {
   const MONGODB_URI = process.env.MONGO_URI || "not set";
   console.log(`MongoDB URI: ${MONGODB_URI}`);
-  res.send("API is running, mongoDB connected.");
+  res.send("API rodando, mongoDB conectado.");
 });
 
 const PORT = process.env.PORT || 3000;
