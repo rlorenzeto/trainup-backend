@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import Exercise from '../models/Exercise';
+import WorkoutHistory from '../models/WorkoutHistory';
 
 // Get exercises for a user
 export const getUserExercises = async (req: Request, res: Response) => {
@@ -58,5 +59,23 @@ export const deleteExercise = async (req: Request, res: Response) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: 'Erro ao remover exercício' });
+  }
+};
+
+export const recordWorkoutHistory = async (req: Request, res: Response) => {
+  const { userId, workoutId, durationSeconds } = req.body;
+  
+  try {
+    const history = new WorkoutHistory({
+      user: userId,
+      workoutId,
+      durationSeconds
+    });
+    
+    await history.save();
+    res.status(201).json({ success: true, data: history });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Erro ao gravar histórico de treino' });
   }
 };

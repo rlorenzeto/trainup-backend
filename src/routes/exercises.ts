@@ -10,6 +10,9 @@ router.get('/user/:userId', protect, exercisesController.getUserExercises);
 // Add exercise to user
 router.post('/user/:userId', protect, exercisesController.addExercise);
 
+// Record workout history
+router.post('/history', protect, exercisesController.recordWorkoutHistory);
+
 // Update/Delete exercise
 router.put('/:id', protect, exercisesController.updateExercise);
 router.delete('/:id', protect, exercisesController.deleteExercise);
